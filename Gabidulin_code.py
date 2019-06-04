@@ -1882,7 +1882,7 @@ class GabidulinCodeGaoDecoder(Decoder):
 		L = E.message_space()
 
                 if received_word not in C.code_space():
-                    raise ValueError("The word to decode has to be in the code-space of the code")
+                    raise ValueError("The word does not belong to the code-space")
                 
                 if basis is None:		
                     basis = C.polynomial_basis()
@@ -1900,16 +1900,16 @@ class GabidulinCodeGaoDecoder(Decoder):
                 estimated_codeword = E.encode(estimated_message,basis)
                 
                 if not r.is_zero():
-                    raise DecodingError("Decoding failed because the number of errors exceeded the decoding radius")
+                    raise DecodingError("Decoding failure, as the number of corrupted positions is larger than floor({d-1}/{2}) = %d of the %s"\
+						% (self.decoding_radius(),C)) 
                 
                 if estimated_message not in L:
-                    raise DecodingError("Decoding failed because the decoded message is not a valid message")
+                    raise DecodingError("Decoding failure, because the decoded message is not a valid message")
                 
                 if not E._is_codeword(estimated_codeword,basis):
                     raise DecodingError("Decoding failed because the decoded word is not a codeword of the code")
                 
-                #if C.rank_distance(received_word,estimated_codeword) > self.decoding_radius():
-                    #raise DecodingError("Decoding failed because the number of errors exceeded the decoding radius 2")
+
 
 		return estimated_codeword
 
@@ -2006,4 +2006,3 @@ GabidulinCode._registered_decoders["GabidulinGao"] = GabidulinCodeGaoDecoder
 
 
  
-lk
