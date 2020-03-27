@@ -1812,14 +1812,14 @@ class GabidulinCodeGaoDecoder(Decoder):
 		x = L.gen()
 		if basis is None:		
 			basis = C.polynomial_basis()
-		evaluation_points = C.evaluation_points()
+		evaluation_points = C.evaluation_points(basis)
 		
 		if n==m:
 			M = x**m-L.one()
 		else:
 		   	try:
 				if not C._is_normal_basis(basis) and n.divides(m):
-					M = x**n-L.one()	        
+					M = x**n-L.one()
 		   	except ValueError:
 				M = L.minimal_vanishing_polynomial(evaluation_points)
 
