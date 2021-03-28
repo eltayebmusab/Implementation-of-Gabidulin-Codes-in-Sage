@@ -18,7 +18,7 @@ from sage.structure.sage_object import SageObject
 from sage.functions.log import *
 from sage.rings.polynomial.skew_polynomial_element import *
 from sage.coding.encoder import Encoder
-from sage.coding.channel_constructions import Channel
+#from sage.coding.channel_constructions import Channel
 from sage.coding.decoder import Decoder, DecodingError
 
 
@@ -1825,9 +1825,6 @@ class GabidulinCodeGaoDecoder(Decoder):
 
 		return M
 
-
-
-
 	@cached_method
 	def decode_to_code(self, received_word, basis=None):
 		r"""
@@ -1845,7 +1842,7 @@ class GabidulinCodeGaoDecoder(Decoder):
 
 		OUTPUT:
 
-			- ``estimated_codeword`` -- estimeted codeword $\\in Gab[n,k]$
+			- ``estimated_codeword`` -- estimated codeword $\\in Gab[n,k]$
 
 		EXAMPLES::
 
@@ -1878,41 +1875,22 @@ class GabidulinCodeGaoDecoder(Decoder):
 		"""
 		C = self.code()
 		E = self.connected_encoder()
-		n, k = C.length(), C.dimension()
-		L = E.message_space()
 
-                if received_word not in C.code_space():
-                    raise ValueError("The word does not belong to the code-space")
-                
-                if basis is None:		
-                    basis = C.polynomial_basis()
-                
-                if E._is_codeword(received_word,basis):
-                    estimated_codeword = received_word
-		    return estimated_codeword	
-                
-                evaluation_points = C.evaluation_points(basis)
-                lagrange_interpolating_polynomial = C._lagrange_interpolating_polynomial(received_word,basis)
-                M = self._minimal_subspace_polynomial(basis)
-                d_stop = (k + n) // 2    
-                (r_out, u_out, v_out) = C._right_LEEA(M, lagrange_interpolating_polynomial,d_stop)
-                (estimated_message, r) = r_out.left_quo_rem(u_out)
-                estimated_codeword = E.encode(estimated_message,basis)
-                
-                if not r.is_zero():
-                    raise DecodingError("Decoding failure, as the number of corrupted positions is larger than floor({d-1}/{2}) = %d of the %s"\
-						% (self.decoding_radius(),C)) 
-                
-                if estimated_message not in L:
-                    raise DecodingError("Decoding failure, because the decoded message is not a valid message")
-                
-                if not E._is_codeword(estimated_codeword,basis):
-                    raise DecodingError("Decoding failed because the decoded word is not a codeword of the code")
-                
+		if basis is None:
+			basis = C.polynomial_basis()
 
+		if E._is_codeword(received_word,basis):
+			return received_word
+
+		estimated_message = self.decode_to_message(received_word,basis)
+		estimated_codeword = E.encode(estimated_message,basis)
+
+		if not E._is_codeword(estimated_codeword,basis):
+			raise DecodingError("Decoding failed because the decoded word is not a codeword of the code")
 
 		return estimated_codeword
 
+	@cached_method
 	def decode_to_message(self, received_word, basis=None):
 		r"""
 		Decode a received word into a message polynomial
@@ -1958,11 +1936,30 @@ class GabidulinCodeGaoDecoder(Decoder):
 		"""
 		C = self.code()
 		E = self.connected_encoder()
-                if basis is None:		
-                    basis = C.polynomial_basis()
-		codeword = self.decode_to_code(received_word,basis)
-		p = E.unencode_nocheck(codeword,basis) 	
-		return p
+		n, k = C.length(), C.dimension()
+		L = E.message_space()
+
+		if received_word not in C.code_space():
+			raise ValueError("The word does not belong to the code-space")
+
+		if basis is None:
+			basis = C.polynomial_basis()
+
+		lagrange_interpolating_polynomial = C._lagrange_interpolating_polynomial(received_word,basis)
+		M = self._minimal_subspace_polynomial(basis)
+		d_stop = (k + n) // 2
+		(r_out, u_out, v_out) = C._right_LEEA(M, lagrange_interpolating_polynomial,d_stop)
+		(estimated_message, r) = r_out.left_quo_rem(u_out)
+
+		if not r.is_zero():
+			raise DecodingError("Decoding failure, as the number of corrupted positions is larger than floor({d-1}/{2}) = %d of the %s"\
+				% (self.decoding_radius(),C))
+
+		if estimated_message not in L:
+			raise DecodingError("Decoding failure, because the decoded message is not a valid message")
+
+		return estimated_message
+
 
 	def decoding_radius(self):
 		r"""
